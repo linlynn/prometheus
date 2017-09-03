@@ -14,6 +14,8 @@
 GO           := GO15VENDOREXPERIMENT=1 go
 FIRST_GOPATH := $(firstword $(subst :, ,$(shell $(GO) env GOPATH)))
 PROMU        := $(FIRST_GOPATH)/bin/promu
+STATICCHECK  := $(FIRST_GOPATH)/bin/staticcheck
+
 pkgs          = $(shell $(GO) list ./... | grep -v /vendor/)
 
 PREFIX                  ?= $(shell pwd)
@@ -26,7 +28,7 @@ ifdef DEBUG
 endif
 
 
-all: format build test
+all: format staticcheck build test
 
 style:
 	@echo ">> checking code style"
@@ -76,5 +78,12 @@ promu:
 	GOARCH=$(subst x86_64,amd64,$(patsubst i%86,386,$(shell uname -m))) \
 	$(GO) get -u github.com/prometheus/promu
 
+staticcheck: $(STATICCHECK)
+	@echo ">> running staticcheck"
+	@$(STATICCHECK) $(pkgs)
 
-.PHONY: all style check_license format build test vet assets tarball docker promu
+
+$(FIRST_GOPATH)/bin/staticcheck:
+	@GOOS= GOARCH= $(GO) get -u honnef.co/go/tools/cmd/staticcheck
+
+.PHONY: all style check_license format staticcheck build test vet assets tarball docker promu
